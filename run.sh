@@ -1,10 +1,11 @@
 #! /bin/bash
+dir=$(basename "${1%.*}")
+dir=output/${dir// /.}
+in="$dir/bass.wav"
+out="$dir/octave.wav"
 
-dir=output
-in=$dir/bass.wav
-out=$dir/octave.wav
-
-mkdir $dir
+mkdir "output"
+mkdir "$dir"
 cp "$1" "$dir/music.mp3"
 
 echo "-------------------------------------------------:"
@@ -27,7 +28,7 @@ echo ""
 
 echo "-------------------------------------------------:"
 echo "----------Tracking melody:"
-crepe $dir/octave.wav --model-capacity tiny -p -v --apply-voicing
+crepe $dir/octave.wav --model-capacity full -p -v --apply-voicing
 echo "-----------Done!"
 echo ""
 echo ""
@@ -36,7 +37,7 @@ echo ""
 echo "-------------------------------------------------:"
 echo "----------Tracking notes:"
 ./notes/notes $dir/octave.f0.csv $dir/notes.csv
-# ./fix-notes.py $dir/notes.csv
+./fix-notes.py $dir/notes.csv
 echo "-----------Done!"
 echo ""
 echo ""
@@ -69,7 +70,7 @@ echo ""
 
 
 echo "-------------------------------------------------:"
-echo "----------Adding audio:"
+echo "----------Adding audio to video:"
 ffmpeg -i $dir/vid.mp4 -i $dir/music.mp3 -c copy -map 0:v:0 -map 1:a:0 $dir/full.mp4 -y
 ffmpeg -i $dir/vid.mp4 -i $dir/bass.wav -c:v copy -c:a aac $dir/bassonly.mp4 -y
 
@@ -79,3 +80,19 @@ ffmpeg -i $dir/vid.mp4 -i $dir/bass.wav -c:v copy -c:a aac $dir/bassonly.mp4 -y
 echo "-----------Done!"
 echo ""
 echo ""
+
+
+# echo "-------------------------------------------------:"
+# echo "----------Uploading to YouTube:"
+artist=`eyeD3 $dir/music.mp3  | grep ' artist' | cut -b 15-`
+# album=`eyeD3 $dir/music.mp3  | grep "album: " | cut -b 8-`
+title=`eyeD3 $dir/music.mp3  | grep "title" | cut -b 8-`
+
+mv $dir/full.mp4 "$artist - $title - Bass Tab.mp4"
+mv $dir/bassonly.mp4 "$artist - $title - Bass Tab - Isolated Bass.mp4"
+
+# python upload_video.py --title="$title($artist) Bass Tab" --file $dir/full.mp4 &
+# python upload_video.py --title="$title($artist) Bass Tab (Isolated Bass)" --file $dir/bassonly.mp4 &
+# echo "-----------Done!"
+# echo ""
+# echo ""

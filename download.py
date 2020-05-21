@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#! /usr/bin/python3
 from pprint import pprint
 import os
 import sys
@@ -18,12 +18,12 @@ if len(sys.argv) == 1:
 
 
 def normalizePath(input):
-  return vfn(input, space="keep", initCap=False).decode('utf-8').rstrip(".")
+  return vfn(input, space="keep", ascii=False, initCap=False).decode('utf-8').rstrip(".")
 
 
 login = "rickylqhan@gmail.com"
 password = "gvyewpgzfbdwasqm"
-targetDir = os.getcwd()
+targetDir = os.getcwd() + "/music"
 albumId = sys.argv[1]
 
 eyed3.log.setLevel("ERROR")

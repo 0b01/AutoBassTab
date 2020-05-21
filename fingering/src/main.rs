@@ -1,6 +1,9 @@
 //! Algorithm for arranging notes on bass
 //! takes in a csv of notes with header
 //! and outputs csv of fretboard positions with header
+
+extern crate csv;
+
 use std::collections::HashMap;
 const MIDI_A4: f32 = 69.;
 const FREQ_A4: f32 = 440.;
@@ -47,7 +50,7 @@ fn cost(this: &Pos, other: &Pos) -> f32 {
         (a_s + b_s) * 0.5 // penalize high strings
     ;
     if a_f == 0. || b_f == 0. {
-        c += 10.;
+        c += 8.;
     }
     c
 }
@@ -200,32 +203,6 @@ impl Arranger {
         self.arrange_aux(&notes, 0, notes.len()-1, None, None)
     }
 }
-
-// def fingering_arrangement(notes):
-//     score = [freq_to_note(note) for note in list(notes)]
-//     n = 50
-//     ss = [score[i:i+n] for i in range(0, len(score), n)]
-//     arrs = []
-//     for s in ss:
-//         # print(score)
-//         # s = score[:50]
-//         cost, arr = arrange(s)
-//         arr = [i[0] for i in arr[:len(arr)]] + [arr[-1][1]]
-//         ns = [neck[i] for i in arr]
-//         # assert(s == ns)
-//         # print(cost, len(arr), arr)
-//         arrs += arr
-//     return arrs
-
-
-// if __name__ == "__main__":
-//     import numpy as np
-//     notes = np.loadtxt("./notes.csv", skiprows=1, delimiter=',')
-//     notes = notes[:, 0]
-//     print(fingering_arrangement(notes))
-
-
-extern crate csv;
 use std::io;
 
 fn main() {
@@ -259,9 +236,9 @@ fn main() {
         arranger.reset();
     }
 
-    for (p, n) in result.iter().zip(&notes) { assert_eq!(arranger.neck[p], *n); }
-    assert_eq!(result.iter().map(|x|arranger.neck[x]).collect::<Vec<_>>(), notes);
-    assert_eq!(result.len(), notes.len());
+    // for (p, n) in result.iter().zip(&notes) { assert_eq!(arranger.neck[p], *n); }
+    // assert_eq!(result.iter().map(|x|arranger.neck[x]).collect::<Vec<_>>(), notes);
+    // assert_eq!(result.len(), notes.len());
 
     println!("string,fret");
     for (string, fret) in result {
