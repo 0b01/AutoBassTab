@@ -1,3 +1,5 @@
+#! /usr/bin/python3
+
 import eyed3
 from sys import argv
 import io

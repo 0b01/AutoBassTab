@@ -54,7 +54,7 @@ fn cost(this: &Pos, other: &Pos) -> f32 {
 
 
 impl Note {
-    const PITCHES: [&'static str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    // const PITCHES: [&'static str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     fn new(idx: isize, octave: isize) -> Self {
         Self {
             idx, octave
@@ -135,6 +135,10 @@ impl Arranger {
             neck,
             pos,
         }
+    }
+
+    fn reset(&mut self) {
+        self.cache.clear();
     }
 
     /// arrange 2 notes
@@ -251,8 +255,12 @@ fn main() {
         for (a, _b) in &arrangement {
             result.push(*a);
         }
-        result.push(arrangement.last().unwrap().1);
+        result.push(arrangement[arrangement.len()-1].1);
+        arranger.reset();
     }
+
+    for (p, n) in result.iter().zip(&notes) { assert_eq!(arranger.neck[p], *n); }
+    assert_eq!(result.iter().map(|x|arranger.neck[x]).collect::<Vec<_>>(), notes);
     assert_eq!(result.len(), notes.len());
 
     println!("string,fret");

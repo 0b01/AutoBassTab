@@ -40,7 +40,7 @@ for s in strings:
 
 
 font = ImageFont.truetype("arial.ttf", 14)
-for (start, dur), (string, fret) in zip(notes[:, 1:], arr):
+for start, (string, fret) in zip(notes[:, 1], arr):
     draw.text((start, strings[int(string)]-8), str(int(fret)), fill=(0,0,0,0), font=font)
 
 del draw

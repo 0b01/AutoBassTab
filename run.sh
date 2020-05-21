@@ -1,14 +1,15 @@
 #! /bin/bash
 
-dir=output/
+dir=output
 in=$dir/bass.wav
 out=$dir/octave.wav
 
-cp $1 $dir/music.mp3
+mkdir $dir
+cp "$1" "$dir/music.mp3"
 
 echo "-------------------------------------------------:"
 echo "-----------Separating stems:"
-spleeter separate -i $dir/music.mp3 -p spleeter:4stems-16kHz -o $dir -f "{instrument}.wav"
+spleeter separate -i "$dir/music.mp3" -p spleeter:4stems-16kHz -o $dir -f "{instrument}.wav"
 echo "-----------Done!"
 echo ""
 echo ""
@@ -27,8 +28,6 @@ echo ""
 echo "-------------------------------------------------:"
 echo "----------Tracking melody:"
 crepe $dir/octave.wav --model-capacity tiny -p -v --apply-voicing
-mv octave.f0.csv $dir
-mv octave.activation.png $dir
 echo "-----------Done!"
 echo ""
 echo ""
@@ -37,6 +36,7 @@ echo ""
 echo "-------------------------------------------------:"
 echo "----------Tracking notes:"
 ./notes/notes $dir/octave.f0.csv $dir/notes.csv
+# ./fix-notes.py $dir/notes.csv
 echo "-----------Done!"
 echo ""
 echo ""
@@ -70,8 +70,12 @@ echo ""
 
 echo "-------------------------------------------------:"
 echo "----------Adding audio:"
-ffmpeg -i $dir/vid.mp4 -i $dir/music.mp3 -c copy -map 0:v:0 -map 1:a:0 $dir/full.mp4
-ffmpeg -i $dir/vid.mp4 -i $dir/bass.wav -c:v copy -c:a aac $dir/bassonly.mp4
+ffmpeg -i $dir/vid.mp4 -i $dir/music.mp3 -c copy -map 0:v:0 -map 1:a:0 $dir/full.mp4 -y
+ffmpeg -i $dir/vid.mp4 -i $dir/bass.wav -c:v copy -c:a aac $dir/bassonly.mp4 -y
+
+# sox $dir/music.mp3 $dir/nobass.mp3 bass -40 300
+# ffmpeg -i $dir/vid.mp4 -i $dir/nobass.mp3 -c copy -map 0:v:0 -map 1:a:0 $dir/nobass.mp4
+
 echo "-----------Done!"
 echo ""
 echo ""
