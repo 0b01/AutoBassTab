@@ -1,0 +1,7 @@
+__pycache__/
+.ipynb_checkpoints/
+target/
+output/
+music/
+*.wav
+pretrained_models/
