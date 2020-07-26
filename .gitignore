@@ -5,3 +5,5 @@ output/
 music/
 *.wav
 pretrained_models/
+*.bin
+*.pb

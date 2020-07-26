@@ -57,7 +57,7 @@ fn cost(this: &Pos, other: &Pos) -> f32 {
 
 
 impl Note {
-    // const PITCHES: [&'static str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
+    const PITCHES: [&'static str; 12] = ["C", "C#", "D", "D#", "E", "F", "F#", "G", "G#", "A", "A#", "B"];
     fn new(idx: isize, octave: isize) -> Self {
         Self {
             idx, octave
@@ -79,6 +79,13 @@ impl Note {
             note.octave -= 1;
         }
         note
+    }
+
+    fn to_string(&self) -> String {
+        let mut ret = String::new();
+        ret += Note::PITCHES[self.idx as usize];
+        ret += &self.octave.to_string();
+        return ret;
     }
 }
 
@@ -205,6 +212,67 @@ impl Arranger {
 }
 use std::io;
 
+use wasm_bindgen::prelude::*;
+
+#[wasm_bindgen]
+extern "C" {
+    // Use `js_namespace` here to bind `console.log(..)` instead of just
+    // `log(..)`
+    #[wasm_bindgen(js_namespace = console)]
+    fn log(s: &str);
+}
+
+
+#[wasm_bindgen]
+pub fn frets(semitone_delta: isize, out: &mut[u8], input: &[f32]) {
+    let mut freqs = vec![];
+    let mut starts = vec![];
+    let mut durs = vec![];
+    let mut it = input.iter();
+    while let Some(i) = it.next() {
+        freqs.push(*i);
+        starts.push(it.next().unwrap());
+        durs.push(it.next().unwrap());
+    }
+
+    let notes: Vec<_> = freqs.iter().copied()
+        .map(freq_to_note)
+        .map(|n| n.add(semitone_delta))
+        .collect();
+
+    for note in &notes {
+        log(&note.to_string());
+    }
+
+    // TODO: time based grouping
+
+    let mut arranger = Arranger::init();
+    // println!("Arranging {} notes.", notes.len());
+    let mut result = vec![];
+    for chunk in notes.as_slice().chunks(200) {
+        let (_cost, arrangement) = arranger.arrange(chunk);
+        for (a, _b) in &arrangement {
+            result.push(*a);
+        }
+        result.push(arrangement[arrangement.len()-1].1);
+        arranger.reset();
+    }
+
+    // for (p, n) in result.iter().zip(&notes) { assert_eq!(arranger.neck[p], *n); }
+    // assert_eq!(result.iter().map(|x|arranger.neck[x]).collect::<Vec<_>>(), notes);
+    // assert_eq!(result.len(), notes.len());
+
+    // println!("string,fret");
+    let mut i = 0;
+    for (string, fret) in result.iter() {
+        out[i] = *string;
+        i += 1;
+        out[i] = *fret;
+        i += 1;
+        // println!("{},{}", string, fret);
+    }
+}
+
 fn main() {
 
     let semitones_diff: isize = std::env::args().collect::<Vec<_>>()[1].parse().unwrap();
@@ -213,16 +281,24 @@ fn main() {
         .has_headers(true)
         .from_reader(io::stdin());
     let mut freqs = vec![];
+    let mut starts = vec![];
+    let mut durs = vec![];
     for result in rdr.records() {
         let record = result.unwrap();
         let freq: f32 = record.get(0).unwrap().parse().unwrap();
+        let start: f32 = record.get(1).unwrap().parse().unwrap();
+        let dur: f32 = record.get(2).unwrap().parse().unwrap();
         freqs.push(freq);
+        starts.push(start);
+        durs.push(dur);
     }
 
     let notes: Vec<_> = freqs.iter().copied()
         .map(freq_to_note)
         .map(|n| n.add(semitones_diff))
         .collect();
+
+    // TODO: time based grouping
 
     let mut arranger = Arranger::init();
     // println!("Arranging {} notes.", notes.len());

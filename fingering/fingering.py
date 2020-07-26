@@ -32,18 +32,6 @@ class Note():
             raise ValueError('Invalid pitch name')
         # octave
         self.oct = oct
-    def toMidi(self):
-        '''
-        Convert the pitch name and octave to a MIDI note number
-        between 0 and 127
-        '''
-        p_ind = Note.pitch_classes.index(self.pname)
-        num_chroma = len(Note.pitch_classes)
-        midi = (self.oct-1)*num_chroma + 24 + p_ind
-        if midi >= 0 and midi <= 127:
-            return midi
-        else:
-            return None
     def __add__(self, step):
         num_chroma = len(Note.pitch_classes)
         note = Note(self.pname, self.oct)
@@ -59,34 +47,6 @@ class Note():
             if new_p_ind > p_ind and new_p_ind < num_chroma:
                 note.oct -= 1
         return note
-
-    def __sub__(self, step):
-        return self.__add__(-step)
-
-    def __eq__(self, other_note):
-        return self.pname == other_note.pname and self.oct == other_note.oct
-
-    def __hash__(self):
-        return hash((self.pname, self.oct))
-
-    def __lt__(self, other_note):
-        return self.oct < other_note.oct or (self.oct == other_note.oct and Note.pitch_classes.index(self.pname) < Note.pitch_classes.index(other_note.pname))
-
-    def __le__(self, other_note):
-        return self.__lt__(other_note) or self.__eq__(other_note)
-
-    def __gt__(self, other_note):
-        return self.oct > other_note.oct or (self.oct == other_note.oct and Note.pitch_classes.index(self.pname) > Note.pitch_classes.index(other_note.pname))
-
-    def __ge__(self, other_note):
-        return self.__gt__(other_note) or self.__eq__(other_note)
-
-    def __str__(self):
-        return "@<%s%d>" % (self.pname, self.oct)
-
-    def __repr__(self):
-        return self.__str__()
-
 
 strings = [ Note("E", 1), Note("A", 1), Note("D", 2), Note("G", 2) ]
 neck = {(i,j): note + j for j in range(21) for i,note in enumerate(strings)} # fret -> note

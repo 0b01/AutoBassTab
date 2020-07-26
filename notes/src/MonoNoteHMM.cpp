@@ -3,7 +3,7 @@
 /*
     pYIN - A fundamental frequency estimator for monophonic audio
     Centre for Digital Music, Queen Mary, University of London.
-    
+
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
     published by the Free Software Foundation; either version 2 of the
@@ -13,7 +13,7 @@
 
 #include "MonoNoteHMM.h"
 
-#include <boost/math/distributions.hpp>
+// #include <boost/math/distributions.hpp>
 
 #include <cstdio>
 #include <cmath>
@@ -28,13 +28,22 @@ MonoNoteHMM::MonoNoteHMM(int fixedLag) :
     build();
 }
 
+template <typename T>
+T normal_pdf(T x, T m, T s)
+{
+    static const T inv_sqrt_2pi = 0.3989422804014327;
+    T a = (x - m) / s;
+
+    return inv_sqrt_2pi / s * std::exp(-T(0.5) * a * a);
+}
+
 vector<double>
 MonoNoteHMM::calculateObsProb(const vector<pair<double, double> > &pitchProb)
 {
     // pitchProb is a list of pairs (pitches and their probabilities)
-    
+
     size_t nCandidate = pitchProb.size();
-    
+
     // what is the probability of pitched
     double pIsPitched = 0;
     for (size_t iCand = 0; iCand < nCandidate; ++iCand)
@@ -42,7 +51,7 @@ MonoNoteHMM::calculateObsProb(const vector<pair<double, double> > &pitchProb)
         pIsPitched += pitchProb[iCand].second;
     }
 
-    pIsPitched = pIsPitched * (1-par.priorWeight) + 
+    pIsPitched = pIsPitched * (1-par.priorWeight) +
                      par.priorPitchedProb * par.priorWeight;
 
     vector<double> out = vector<double>(par.n);
@@ -69,9 +78,9 @@ MonoNoteHMM::calculateObsProb(const vector<pair<double, double> > &pitchProb)
                         minDistCandidate = iCand;
                     }
                 }
-                tempProb = std::pow(minDistProb, par.yinTrust) * 
-                           boost::math::pdf(pitchDistr[i], 
-                                            pitchProb[minDistCandidate].first);
+                float pdf_y = normal_pdf(pitchProb[minDistCandidate].first, pitchDistr[i].mean(), pitchDistr[i].stddev());
+                tempProb = std::pow(minDistProb, par.yinTrust) *
+                           pdf_y;
             } else {
                 tempProb = 1;
             }
@@ -79,12 +88,12 @@ MonoNoteHMM::calculateObsProb(const vector<pair<double, double> > &pitchProb)
             out[i] = tempProb;
         }
     }
-    
+
     for (size_t i = 0; i < par.n; ++i)
     {
         if (i % par.nSPP != 2)
         {
-            if (tempProbSum > 0) 
+            if (tempProbSum > 0)
             {
                 out[i] = out[i] / tempProbSum * pIsPitched;
             }
@@ -92,9 +101,10 @@ MonoNoteHMM::calculateObsProb(const vector<pair<double, double> > &pitchProb)
             out[i] = (1-pIsPitched) / (par.nPPS * par.nS);
         }
     }
-    
+
     return(out);
 }
+
 
 void
 MonoNoteHMM::build()
@@ -107,19 +117,19 @@ MonoNoteHMM::build()
     // 3-5. second-lowest pitch
     //    3. attack state
     //    ...
-    
+
     m_nState = par.n;
 
     // observation distributions
     for (size_t iState = 0; iState < par.n; ++iState)
     {
-        pitchDistr.push_back(boost::math::normal(0,1));
+        pitchDistr.push_back(std::normal_distribution<double>(0,1));
         if (iState % par.nSPP == 2)
         {
             // silent state starts tracking
             m_init.push_back(1.0/(par.nS * par.nPPS));
         } else {
-            m_init.push_back(0.0);            
+            m_init.push_back(0.0);
         }
     }
 
@@ -127,12 +137,12 @@ MonoNoteHMM::build()
     {
         size_t index = iPitch * par.nSPP;
         double mu = par.minPitch + iPitch * 1.0/par.nPPS;
-        pitchDistr[index] = boost::math::normal(mu, par.sigmaYinPitchAttack);
-        pitchDistr[index+1] = boost::math::normal(mu, par.sigmaYinPitchStable);
-        pitchDistr[index+2] = boost::math::normal(mu, 1.0); // dummy
+        pitchDistr[index] = std::normal_distribution<double>(mu, par.sigmaYinPitchAttack);
+        pitchDistr[index+1] = std::normal_distribution<double>(mu, par.sigmaYinPitchStable);
+        pitchDistr[index+2] = std::normal_distribution<double>(mu, 1.0); // dummy
     }
-    
-    boost::math::normal noteDistanceDistr(0, par.sigma2Note);
+
+    std::normal_distribution<double> noteDistanceDistr(0, par.sigma2Note);
 
     for (size_t iPitch = 0; iPitch < (par.nS * par.nPPS); ++iPitch)
     {
@@ -152,7 +162,7 @@ MonoNoteHMM::build()
         m_from.push_back(index+1);
         m_to.push_back(index+1); // to itself
         m_transProb.push_back(par.pStableSelftrans);
-        
+
         m_from.push_back(index+1);
         m_to.push_back(index+2); // to silent
         m_transProb.push_back(par.pStable2Silent);
@@ -161,8 +171,8 @@ MonoNoteHMM::build()
         m_from.push_back(index+2);
         m_to.push_back(index+2);
         m_transProb.push_back(par.pSilentSelftrans);
-        
-        
+
+
         // the more complicated transitions from the silent
         double probSumSilent = 0;
 
@@ -171,18 +181,19 @@ MonoNoteHMM::build()
         {
             int fromPitch = iPitch;
             int toPitch = jPitch;
-            double semitoneDistance = 
+            double semitoneDistance =
                 std::abs(fromPitch - toPitch) * 1.0 / par.nPPS;
-            
 
-            if (semitoneDistance == 0 || 
-                (semitoneDistance > par.minSemitoneDistance 
+
+            if (semitoneDistance == 0 ||
+                (semitoneDistance > par.minSemitoneDistance
                  && semitoneDistance < par.maxJump))
             {
                 size_t toIndex = jPitch * par.nSPP; // note attack index
 
-                double tempWeightSilent = boost::math::pdf(noteDistanceDistr, 
-                                                           semitoneDistance);
+                double tempWeightSilent = normal_pdf(semitoneDistance,
+                    noteDistanceDistr.mean(),
+                    noteDistanceDistr.stddev());
                 probSumSilent += tempWeightSilent;
 
                 tempTransProbSilent.push_back(tempWeightSilent);
@@ -193,7 +204,7 @@ MonoNoteHMM::build()
         }
         for (size_t i = 0; i < tempTransProbSilent.size(); ++i)
         {
-            m_transProb.push_back((1-par.pSilentSelftrans) * 
+            m_transProb.push_back((1-par.pSilentSelftrans) *
                                   tempTransProbSilent[i]/probSumSilent);
         }
     }

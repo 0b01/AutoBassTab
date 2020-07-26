@@ -248,6 +248,11 @@ def get_activation(audio, sr, model_capacity='full', center=True, step_size=10,
     frames -= np.mean(frames, axis=1)[:, np.newaxis]
     frames /= np.std(frames, axis=1)[:, np.newaxis]
 
+    import tensorflow as tf
+    tf.keras.models.save_model(model, "mdl.pb")
+    raise Exception
+    
+
     # run prediction and convert the frequency bin weights to Hz
     return model.predict(frames, verbose=verbose), level
 

@@ -3,7 +3,7 @@
 /*
     pYIN - A fundamental frequency estimator for monophonic audio
     Centre for Digital Music, Queen Mary, University of London.
-    
+
     This program is free software; you can redistribute it and/or
     modify it under the terms of the GNU General Public License as
     published by the Free Software Foundation; either version 2 of the
@@ -17,7 +17,8 @@
 #include "MonoNoteParameters.h"
 #include "SparseHMM.h"
 
-#include <boost/math/distributions.hpp>
+// #include <boost/math/distributions.hpp>
+#include <random>
 
 #include <vector>
 #include <cstdio>
@@ -34,7 +35,7 @@ public:
     double getFrequency(size_t index);
     void build();
     MonoNoteParameters par;
-    vector<boost::math::normal> pitchDistr;
+    vector<std::normal_distribution<double> > pitchDistr;
 };
 
 #endif

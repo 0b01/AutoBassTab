@@ -1,6 +1,9 @@
 #include "MonoNote.h"
 #include <fstream>
 #include <iostream>
+#include <algorithm>
+#include <sstream>
+
 using namespace std;
 
 struct Feature {
@@ -160,6 +163,23 @@ private:
     vector<float> m_pitchTrack;
 };
 
+extern "C" {
+int get_notes(float out[], int size, float level[], float pitch[]) {
+    vector<float> l(level, level + size);
+    vector<float> p(pitch, pitch + size);
+    Notes notes(l, p);
+    notes.process();
+
+    vector<float>* ret = new vector<float>();
+    int i = 0;
+    for (auto note : notes._notes) {
+        out[i++] = note.value;
+        out[i++] = note.start;
+        out[i++] = note.dur;
+    }
+    return notes._notes.size() * 3;
+}
+}
 
 int main(int argc, char **argv) {
     cout << "Usage: ./notes infile.f0.csv outfile.csv" << endl;
@@ -198,4 +218,11 @@ int main(int argc, char **argv) {
                 << note.start << ","
                 << note.dur << endl;
     }
+
+    float output[time.size() * 3];
+    int ret_sz = get_notes(output, time.size(), level.data(), pitch.data());
+    for (float* i = output; i < output + ret_sz; i++) {
+        cout << *i << endl;
+    }
+
 }
